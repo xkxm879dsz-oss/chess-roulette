@@ -532,7 +532,7 @@ function startGame() {
     if (G.wTime<=0||G.bTime<=0) { clearTimers(); doTimeout(); }
   }, 80);
 
-  scheduleMove(500);
+  scheduleMove(250);
 }
 
 function scheduleMove(delay) {
@@ -545,7 +545,7 @@ function scheduleMove(delay) {
     if (res) G.lastMove={from:res.from,to:res.to};
     renderBoard(); updTimers();
     if (G.chess.game_over()) setTimeout(endGame, 350);
-    else scheduleMove(380);
+    else scheduleMove(190);
   }, delay);
 }
 
