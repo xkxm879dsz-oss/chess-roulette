@@ -480,11 +480,24 @@ function doTimeout() {
   G.phase='result';
   const lost = G.wTime<=0?'w':'b';
   G.wTime=Math.max(0,G.wTime); G.bTime=Math.max(0,G.bTime); updTimers();
+
+  const ksq = kingSquare(G.chess, lost);
+  const kEl = document.querySelector(`[data-sq="${ksq}"]`);
+  if (kEl) kEl.style.cssText+='background:rgba(255,40,40,.7)!important';
+
+  let won=false, payout=0;
+  if (G.bet.placed && G.bet.squares.includes(ksq)) {
+    won=true; payout=G.bet.amount*(G.bet.mode==='single'?64:16);
+  }
   showPopup({
-    icon:'⏱️', titleText:'TIME OUT', cls:'lose',
-    sub:(lost==='w'?'White':'Black')+' ran out of time',
-    detail:'Bets are lost on timeout',
-    won:false
+    icon: won?'🏆':(G.bet.placed?'💸':'⏱️'),
+    titleText: won?'YOU WIN!':(G.bet.placed?'YOU LOSE':'TIME OUT'),
+    cls: won?'win':(G.bet.placed?'lose':'draw'),
+    sub: (lost==='w'?'White':'Black')+' ran out of time! King on '+ksq.toUpperCase(),
+    detail: won
+      ? `Your bet on ${G.bet.squares.join(', ')} paid off!`
+      : (G.bet.placed ? `King landed on ${ksq.toUpperCase()} — not your square` : 'No bet placed'),
+    won, payout
   });
 }
 
