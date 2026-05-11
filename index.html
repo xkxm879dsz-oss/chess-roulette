@@ -13,6 +13,7 @@
   --muted:#4e4c5d;--green:#4caf50;--red:#f53b5d;
   --text:#c9c7d1;--text2:#aa9df4;--textbright:#fcfcfd;
   --light:#f0d9b5;--dark:#b58863;
+  --sq:72px;
 }
 body{background:var(--bg);color:var(--text);font-family:Arial,"Helvetica Neue",Helvetica,sans-serif;font-size:14px;min-height:100vh;display:flex;flex-direction:column}
 
@@ -38,13 +39,13 @@ main{flex:1;display:flex;justify-content:center;align-items:flex-start;gap:22px;
 
 /* BOARD OUTER */
 .board-outer{display:flex;align-items:flex-start}
-.rank-labels{display:grid;grid-template-rows:repeat(8,72px);align-items:center;padding-right:6px;color:var(--muted);font-size:.75em;font-weight:700;text-align:right}
+.rank-labels{display:grid;grid-template-rows:repeat(8,var(--sq));align-items:center;padding-right:6px;color:var(--muted);font-size:.75em;font-weight:700;text-align:right}
 .board-col{display:flex;flex-direction:column}
-.file-labels{display:grid;grid-template-columns:repeat(8,72px);text-align:center;color:var(--muted);font-size:.75em;font-weight:700;padding-top:5px}
+.file-labels{display:grid;grid-template-columns:repeat(8,var(--sq));text-align:center;color:var(--muted);font-size:.75em;font-weight:700;padding-top:5px}
 
 /* BOARD */
-#board{display:grid;grid-template-columns:repeat(8,72px);grid-template-rows:repeat(8,72px);border:2px solid var(--bg4);border-radius:8px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.6),0 0 0 1px rgba(128,108,239,.15)}
-.sq{width:72px;height:72px;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;transition:filter .1s}
+#board{display:grid;grid-template-columns:repeat(8,var(--sq));grid-template-rows:repeat(8,var(--sq));border:2px solid var(--bg4);border-radius:8px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.6),0 0 0 1px rgba(128,108,239,.15)}
+.sq{width:var(--sq);height:var(--sq);display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;transition:filter .1s}
 .sq.light{background:var(--light)}
 .sq.dark{background:var(--dark)}
 .sq.hl-single{background:rgba(128,108,239,.7)!important}
@@ -52,7 +53,7 @@ main{flex:1;display:flex;justify-content:center;align-items:flex-start;gap:22px;
 .sq.lm-from::after,.sq.lm-to::after{content:'';position:absolute;inset:0;background:rgba(128,108,239,.3);pointer-events:none}
 .sq.in-check::after{content:'';position:absolute;inset:0;background:radial-gradient(circle,rgba(245,59,93,.8) 0%,transparent 70%);pointer-events:none;z-index:2}
 .sq.bettable:hover{filter:brightness(1.15)}
-.piece{font-size:50px;line-height:1;pointer-events:none;z-index:1;position:relative;user-select:none}
+.piece{font-size:calc(var(--sq) * .69);line-height:1;pointer-events:none;z-index:1;position:relative;user-select:none}
 .piece.w{color:#fff;text-shadow:-1px -1px 0 #333,1px -1px 0 #333,-1px 1px 0 #333,1px 1px 0 #333}
 .piece.b{color:#1a1a1a;text-shadow:-1px -1px 0 rgba(255,255,255,.5),1px -1px 0 rgba(255,255,255,.5),-1px 1px 0 rgba(255,255,255,.5),1px 1px 0 rgba(255,255,255,.5)}
 
@@ -124,6 +125,36 @@ main{flex:1;display:flex;justify-content:center;align-items:flex-start;gap:22px;
 .rules-payouts{display:flex;gap:10px;flex-wrap:wrap}
 .payout-pill{background:var(--bg3);border:1px solid var(--bg4);border-radius:40px;padding:8px 16px;font-size:.78em;color:var(--text);line-height:1.4}
 .payout-pill b{color:var(--accent2)}
+
+/* ── RESPONSIVE ── */
+@media(max-width:720px){
+  main{flex-direction:column;align-items:stretch;padding:12px 12px;gap:12px}
+  .bet-panel{width:100%;margin-top:0}
+  .board-section{align-items:center}
+  .rules-section{padding:24px 16px 32px}
+  .rules-grid{grid-template-columns:1fr 1fr;gap:10px}
+  .rules-payouts{flex-direction:column}
+}
+@media(max-width:600px){
+  :root{--sq:clamp(36px,calc((100vw - 56px)/8),72px)}
+  header{padding:10px 14px}
+  .logo{font-size:1.1em}
+  .bal-wrap{padding:5px 10px;gap:6px}
+  .bal-amount{font-size:1em}
+  .player-bar{padding:8px 12px;border-radius:10px}
+  .pname{font-size:.8em}
+  .ptimer{font-size:1em;padding:3px 10px;min-width:52px}
+  .bet-panel{padding:14px;gap:10px;border-radius:12px}
+  .cd-num{font-size:2em}
+  .result-card{padding:12px 14px;gap:10px}
+  .rc-icon{font-size:1.6em}
+  .rc-title{font-size:.95em}
+  .rc-amount{font-size:1.1em}
+}
+@media(max-width:420px){
+  .rules-grid{grid-template-columns:1fr}
+  .mode-btn{padding:8px 4px;font-size:.78em}
+}
 
 .hidden{display:none!important}
 </style>
