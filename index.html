@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chess Roulette</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f0f1a;--bg2:#1a1a2e;--bg3:#16213e;--bg4:#0f3460;
+  --gold:#f0b429;--gold2:#ffd700;--blue:#4fc3f7;
+  --green:#4caf50;--red:#f44336;--text:#e8eaf6;--text2:#9fa8da;
+  --light:#f0d9b5;--dark:#b58863;
+}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;min-height:100vh;display:flex;flex-direction:column}
+
+/* HEADER */
+header{background:var(--bg3);border-bottom:2px solid var(--bg4);padding:12px 28px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 12px rgba(0,0,0,.6)}
+.logo{font-size:1.5em;font-weight:900;letter-spacing:2px;background:linear-gradient(135deg,var(--gold),var(--gold2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.bal-wrap{display:flex;align-items:center;gap:8px}
+.bal-label{color:var(--text2);font-size:.85em;letter-spacing:1px}
+.bal-amount{font-size:1.4em;font-weight:bold;color:var(--gold)}
+
+/* LAYOUT */
+main{flex:1;display:flex;justify-content:center;align-items:flex-start;gap:22px;padding:22px;flex-wrap:wrap}
+
+/* BOARD SECTION */
+.board-section{display:flex;flex-direction:column;align-items:center;gap:8px}
+.player-bar{display:flex;justify-content:space-between;align-items:center;background:var(--bg3);border:1px solid var(--bg4);border-radius:8px;padding:8px 14px;width:100%}
+.pname{font-weight:bold;font-size:.9em}
+.ptimer{font-size:1.15em;font-weight:bold;font-family:'Courier New',monospace;color:var(--gold);background:var(--bg);padding:4px 10px;border-radius:6px;border:1px solid var(--bg4);min-width:64px;text-align:center;transition:all .2s}
+.ptimer.active{color:var(--green);border-color:var(--green);box-shadow:0 0 8px rgba(76,175,80,.4)}
+.ptimer.danger{color:var(--red)!important;border-color:var(--red)!important;box-shadow:0 0 8px rgba(244,67,54,.5)!important;animation:pulse .6s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* BOARD OUTER */
+.board-outer{display:flex;align-items:flex-start}
+.rank-labels{display:grid;grid-template-rows:repeat(8,72px);align-items:center;padding-right:5px;color:var(--text2);font-size:.75em;font-weight:bold;text-align:right}
+.board-col{display:flex;flex-direction:column}
+.file-labels{display:grid;grid-template-columns:repeat(8,72px);text-align:center;color:var(--text2);font-size:.75em;font-weight:bold;padding-top:4px}
+
+/* BOARD */
+#board{display:grid;grid-template-columns:repeat(8,72px);grid-template-rows:repeat(8,72px);border:3px solid var(--bg4);border-radius:3px;overflow:hidden;box-shadow:0 0 40px rgba(0,0,0,.7),0 0 80px rgba(15,52,96,.3)}
+.sq{width:72px;height:72px;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;transition:filter .1s}
+.sq.light{background:var(--light)}
+.sq.dark{background:var(--dark)}
+.sq.hl-single{background:rgba(255,215,0,.65)!important}
+.sq.hl-quad{background:rgba(79,195,247,.55)!important}
+.sq.lm-from::after,.sq.lm-to::after{content:'';position:absolute;inset:0;background:rgba(0,180,80,.35);pointer-events:none}
+.sq.in-check::after{content:'';position:absolute;inset:0;background:radial-gradient(circle,rgba(255,30,30,.75) 0%,transparent 70%);pointer-events:none;z-index:2}
+.sq.bettable:hover{filter:brightness(1.18)}
+.piece{font-size:50px;line-height:1;pointer-events:none;z-index:1;position:relative;user-select:none}
+.piece.w{color:#fff;text-shadow:-1px -1px 0 #333,1px -1px 0 #333,-1px 1px 0 #333,1px 1px 0 #333}
+.piece.b{color:#1a1a1a;text-shadow:-1px -1px 0 rgba(255,255,255,.5),1px -1px 0 rgba(255,255,255,.5),-1px 1px 0 rgba(255,255,255,.5),1px 1px 0 rgba(255,255,255,.5)}
+
+/* BET PANEL */
+.bet-panel{background:var(--bg2);border:1px solid var(--bg4);border-radius:12px;padding:20px;width:278px;display:flex;flex-direction:column;gap:14px;box-shadow:0 4px 20px rgba(0,0,0,.4);align-self:flex-start;margin-top:42px}
+.panel-title{font-size:1em;font-weight:bold;text-align:center;color:var(--gold);border-bottom:1px solid var(--bg4);padding-bottom:10px;letter-spacing:1px}
+.phase-badge{text-align:center;font-size:.8em;padding:5px 12px;border-radius:20px;font-weight:bold;letter-spacing:1px}
+.ph-bet{background:rgba(240,180,41,.12);color:var(--gold);border:1px solid var(--gold)}
+.ph-play{background:rgba(76,175,80,.12);color:var(--green);border:1px solid var(--green)}
+.cd-num{text-align:center;font-size:2.6em;font-weight:900;font-family:'Courier New',monospace;color:var(--gold2);line-height:1}
+.cd-label{text-align:center;font-size:.78em;color:var(--text2);margin-top:2px}
+
+/* Bet mode */
+.bet-modes{display:flex;gap:8px}
+.mode-btn{flex:1;padding:10px 6px;border:2px solid var(--bg4);background:var(--bg3);color:var(--text);border-radius:8px;cursor:pointer;font-size:.82em;text-align:center;transition:all .2s;line-height:1.3}
+.mode-btn.active{border-color:var(--gold);background:rgba(240,180,41,.1);color:var(--gold)}
+.mode-multi{font-size:1.2em;font-weight:bold;display:block;margin-bottom:2px}
+
+/* Amount */
+.amt-label{font-size:.82em;color:var(--text2);margin-bottom:5px}
+.amt-input{background:var(--bg3);border:1px solid var(--bg4);color:var(--text);padding:9px 12px;border-radius:8px;font-size:1em;width:100%;outline:none;transition:border-color .2s}
+.amt-input:focus{border-color:var(--gold)}
+.quick-bets{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+.qb{padding:4px 10px;background:var(--bg4);color:var(--text);border:none;border-radius:4px;cursor:pointer;font-size:.78em;transition:background .2s}
+.qb:hover{background:#1a4a80}
+
+.sel-squares{font-size:.82em;color:var(--text2);min-height:20px}
+.sel-squares b{color:var(--gold)}
+
+.btn-main{padding:11px;background:linear-gradient(135deg,var(--gold),#d99500);color:#000;border:none;border-radius:8px;font-size:.95em;font-weight:bold;cursor:pointer;transition:all .2s;width:100%}
+.btn-main:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 4px 15px rgba(240,180,41,.45)}
+.btn-main:disabled{opacity:.35;cursor:not-allowed}
+.btn-sec{padding:9px;background:transparent;color:var(--text2);border:1px solid var(--bg4);border-radius:8px;font-size:.88em;cursor:pointer;transition:all .2s}
+.btn-sec:hover{background:var(--bg3);color:var(--text)}
+
+/* Active bet info */
+.bet-info-box{background:var(--bg3);border-radius:8px;padding:11px;font-size:.82em;display:flex;flex-direction:column;gap:5px}
+.bi-row{display:flex;justify-content:space-between}
+.bi-val{color:var(--gold);font-weight:bold}
+
+/* POPUP */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:100;align-items:center;justify-content:center;backdrop-filter:blur(5px)}
+.overlay.show{display:flex}
+.popup{background:var(--bg2);border:2px solid var(--bg4);border-radius:16px;padding:32px 28px;max-width:380px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.8);animation:popIn .3s cubic-bezier(.34,1.56,.64,1)}
+@keyframes popIn{from{transform:scale(.75);opacity:0}to{transform:scale(1);opacity:1}}
+.pop-icon{font-size:3em;margin-bottom:12px}
+.pop-title{font-size:1.6em;font-weight:900;margin-bottom:6px}
+.pop-title.win{color:var(--green)}
+.pop-title.lose{color:var(--red)}
+.pop-title.draw{color:var(--text2)}
+.pop-sub{color:var(--text2);font-size:.9em;margin-bottom:14px;line-height:1.4}
+.pop-amount{font-size:1.9em;font-weight:bold;margin-bottom:6px}
+.pop-amount.pos{color:var(--green)}
+.pop-amount.neg{color:var(--red)}
+.pop-detail{font-size:.82em;color:var(--text2);margin-bottom:18px}
+.pop-cd{font-size:.82em;color:var(--text2)}
+.pop-cd b{color:var(--gold)}
+
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">♞ CHESS ROULETTE</div>
+  <div class="bal-wrap">
+    <span class="bal-label">БАЛАНС</span>
+    <span class="bal-amount" id="balDisplay">$1 000.00</span>
+  </div>
+</header>
+
+<main>
+  <div class="board-section">
+    <div class="player-bar">
+      <span class="pname">⬛ Чёрные</span>
+      <span class="ptimer" id="timerB">0:30</span>
+    </div>
+    <div class="board-outer">
+      <div class="rank-labels"><span>8</span><span>7</span><span>6</span><span>5</span><span>4</span><span>3</span><span>2</span><span>1</span></div>
+      <div class="board-col">
+        <div id="board"></div>
+        <div class="file-labels"><span>a</span><span>b</span><span>c</span><span>d</span><span>e</span><span>f</span><span>g</span><span>h</span></div>
+      </div>
+    </div>
+    <div class="player-bar">
+      <span class="pname">⬜ Белые</span>
+      <span class="ptimer" id="timerW">0:30</span>
+    </div>
+  </div>
+
+  <div class="bet-panel">
+    <div class="panel-title">♠ CHESS ROULETTE</div>
+    <div class="phase-badge ph-bet" id="phaseBadge">СТАВКИ ПРИНИМАЮТСЯ</div>
+    <div>
+      <div class="cd-num" id="cdNum">10</div>
+      <div class="cd-label" id="cdLabel">секунд до начала</div>
+    </div>
+
+    <div id="betControls">
+      <div class="amt-label">Режим ставки:</div>
+      <div class="bet-modes">
+        <button class="mode-btn active" id="btnSingle" onclick="setBetMode('single')">
+          <span class="mode-multi">×64</span>1 поле
+        </button>
+        <button class="mode-btn" id="btnQuad" onclick="setBetMode('quad')">
+          <span class="mode-multi">×16</span>4 поля (2×2)
+        </button>
+      </div>
+      <div style="margin-top:12px">
+        <div class="amt-label">Сумма ставки ($):</div>
+        <input type="number" class="amt-input" id="amtInput" value="10" min="1" step="1">
+        <div class="quick-bets">
+          <button class="qb" onclick="quickBet(10)">$10</button>
+          <button class="qb" onclick="quickBet(25)">$25</button>
+          <button class="qb" onclick="quickBet(50)">$50</button>
+          <button class="qb" onclick="quickBet(100)">$100</button>
+        </div>
+      </div>
+      <div class="sel-squares" id="selSq" style="margin-top:8px">Кликните на доске чтобы выбрать поле</div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn-main" id="betBtn" onclick="placeBet()" disabled>Поставить</button>
+        <button class="btn-sec" onclick="clearBet()">Сброс</button>
+      </div>
+    </div>
+
+    <div class="bet-info-box hidden" id="betInfoBox">
+      <div class="bi-row"><span>Ставка:</span><span class="bi-val" id="biAmt">—</span></div>
+      <div class="bi-row"><span>Режим:</span><span class="bi-val" id="biMode">—</span></div>
+      <div class="bi-row"><span>Поля:</span><span class="bi-val" id="biSq">—</span></div>
+      <div class="bi-row"><span>Возможный выигрыш:</span><span class="bi-val" id="biWin">—</span></div>
+    </div>
+
+    <div class="hidden" id="noBetBox" style="font-size:.8em;color:var(--text2);text-align:center">Ставка не сделана — вы наблюдаете</div>
+  </div>
+</main>
+
+<div class="overlay" id="overlay">
+  <div class="popup">
+    <div class="pop-icon" id="popIcon">🏆</div>
+    <div class="pop-title win" id="popTitle">ПОБЕДА!</div>
+    <div class="pop-sub" id="popSub">Ваша ставка сыграла!</div>
+    <div class="pop-amount pos" id="popAmt">+$640</div>
+    <div class="pop-detail" id="popDetail">Король на e1</div>
+    <div class="pop-cd">Новая партия через <b id="popCd">3</b> сек…</div>
+  </div>
+</div>
+
+<script>
+// ── Piece-square tables (white perspective, row 0 = rank 8) ──
+const PST = {
+  p:[[0,0,0,0,0,0,0,0],[50,50,50,50,50,50,50,50],[10,10,20,30,30,20,10,10],[5,5,10,25,25,10,5,5],[0,0,0,20,20,0,0,0],[5,-5,-10,0,0,-10,-5,5],[5,10,10,-20,-20,10,10,5],[0,0,0,0,0,0,0,0]],
+  n:[[-50,-40,-30,-30,-30,-30,-40,-50],[-40,-20,0,0,0,0,-20,-40],[-30,0,10,15,15,10,0,-30],[-30,5,15,20,20,15,5,-30],[-30,0,15,20,20,15,0,-30],[-30,5,10,15,15,10,5,-30],[-40,-20,0,5,5,0,-20,-40],[-50,-40,-30,-30,-30,-30,-40,-50]],
+  b:[[-20,-10,-10,-10,-10,-10,-10,-20],[-10,0,0,0,0,0,0,-10],[-10,0,5,10,10,5,0,-10],[-10,5,5,10,10,5,5,-10],[-10,0,10,10,10,10,0,-10],[-10,10,10,10,10,10,10,-10],[-10,5,0,0,0,0,5,-10],[-20,-10,-10,-10,-10,-10,-10,-20]],
+  r:[[0,0,0,0,0,0,0,0],[5,10,10,10,10,10,10,5],[-5,0,0,0,0,0,0,-5],[-5,0,0,0,0,0,0,-5],[-5,0,0,0,0,0,0,-5],[-5,0,0,0,0,0,0,-5],[-5,0,0,0,0,0,0,-5],[0,0,0,5,5,0,0,0]],
+  q:[[-20,-10,-10,-5,-5,-10,-10,-20],[-10,0,0,0,0,0,0,-10],[-10,0,5,5,5,5,0,-10],[-5,0,5,5,5,5,0,-5],[0,0,5,5,5,5,0,-5],[-10,5,5,5,5,5,0,-10],[-10,0,5,0,0,0,0,-10],[-20,-10,-10,-5,-5,-10,-10,-20]],
+  k:[[-30,-40,-40,-50,-50,-40,-40,-30],[-30,-40,-40,-50,-50,-40,-40,-30],[-30,-40,-40,-50,-50,-40,-40,-30],[-30,-40,-40,-50,-50,-40,-40,-30],[-20,-30,-30,-40,-40,-30,-30,-20],[-10,-20,-20,-20,-20,-20,-20,-10],[20,20,0,0,0,0,20,20],[20,30,10,0,0,10,30,20]]
+};
+const PV = {p:100,n:320,b:330,r:500,q:900,k:20000};
+const SYM = {wK:'♔',wQ:'♕',wR:'♖',wB:'♗',wN:'♘',wP:'♙',bK:'♚',bQ:'♛',bR:'♜',bB:'♝',bN:'♞',bP:'♟'};
+
+// ── State ──
+const G = {
+  balance: 1000,
+  phase: 'idle',
+  cdSecs: 10,
+  chess: null,
+  wTime: 30000,
+  bTime: 30000,
+  lastTick: 0,
+  lastMove: null,
+  bet: {mode:'single', squares:[], amount:10, placed:false},
+  T: {cd:null, game:null, move:null, pop:null}
+};
+
+// ── AI ──
+function evalBoard(chess) {
+  if (chess.in_checkmate()) return chess.turn()==='w' ? -99999 : 99999;
+  if (chess.in_draw() || chess.in_stalemate()) return 0;
+  let s = 0;
+  chess.board().forEach((row, r) => row.forEach((p, c) => {
+    if (!p) return;
+    const tr = p.color==='w' ? r : 7-r;
+    const bonus = PST[p.type] ? PST[p.type][tr][c] : 0;
+    s += p.color==='w' ? (PV[p.type]+bonus) : -(PV[p.type]+bonus);
+  }));
+  return s;
+}
+
+function minimax(chess, depth, alpha, beta, max) {
+  if (depth===0 || chess.game_over()) return evalBoard(chess);
+  const moves = chess.moves();
+  moves.sort((a,b) => (b.includes('x')?1:0)-(a.includes('x')?1:0));
+  if (max) {
+    let best=-Infinity;
+    for (const m of moves) {
+      chess.move(m);
+      best = Math.max(best, minimax(chess, depth-1, alpha, beta, false));
+      chess.undo();
+      alpha = Math.max(alpha, best);
+      if (beta<=alpha) break;
+    }
+    return best;
+  } else {
+    let best=Infinity;
+    for (const m of moves) {
+      chess.move(m);
+      best = Math.min(best, minimax(chess, depth-1, alpha, beta, true));
+      chess.undo();
+      beta = Math.min(beta, best);
+      if (beta<=alpha) break;
+    }
+    return best;
+  }
+}
+
+function bestMove(chess) {
+  const moves = chess.moves();
+  if (!moves.length) return null;
+  // shuffle for variety
+  for (let i=moves.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[moves[i],moves[j]]=[moves[j],moves[i]];}
+  const isW = chess.turn()==='w';
+  let best=null, bestV=isW?-Infinity:Infinity;
+  for (const m of moves) {
+    chess.move(m);
+    const v = minimax(chess, 2, -Infinity, Infinity, !isW);
+    chess.undo();
+    if (isW ? v>bestV : v<bestV) { bestV=v; best=m; }
+  }
+  return best;
+}
+
+// ── Board render ──
+function buildBoard() {
+  const el = document.getElementById('board');
+  el.innerHTML = '';
+  for (let r=0;r<8;r++) for (let c=0;c<8;c++) {
+    const sq = document.createElement('div');
+    const name = String.fromCharCode(97+c)+(8-r);
+    sq.className = 'sq ' + ((r+c)%2===0 ? 'light' : 'dark');
+    sq.dataset.sq = name; sq.dataset.r = r; sq.dataset.c = c;
+    const p = document.createElement('div');
+    p.className = 'piece';
+    sq.appendChild(p);
+    sq.addEventListener('click', () => onSquareClick(name, r, c));
+    el.appendChild(sq);
+  }
+}
+
+function renderBoard() {
+  const bd = G.chess.board();
+  document.querySelectorAll('.sq').forEach(el => {
+    const r=+el.dataset.r, c=+el.dataset.c, name=el.dataset.sq;
+    const p = bd[r][c];
+    el.classList.remove('hl-single','hl-quad','lm-from','lm-to','in-check','bettable');
+    const pe = el.querySelector('.piece');
+    if (p) {
+      const key = p.color + p.type.toUpperCase();
+      pe.textContent = SYM[key]||'';
+      pe.className = 'piece ' + p.color;
+    } else { pe.textContent=''; pe.className='piece'; }
+    if (G.lastMove) {
+      if (name===G.lastMove.from) el.classList.add('lm-from');
+      if (name===G.lastMove.to) el.classList.add('lm-to');
+    }
+    if (G.chess.in_check()) {
+      if (p && p.type==='k' && p.color===G.chess.turn()) el.classList.add('in-check');
+    }
+    if (G.bet.squares.includes(name)) {
+      el.classList.add(G.bet.mode==='single' ? 'hl-single' : 'hl-quad');
+    }
+    if (G.phase==='betting') el.classList.add('bettable');
+  });
+}
+
+// ── Betting ──
+function setBetMode(mode) {
+  G.bet.mode = mode; G.bet.squares = [];
+  document.getElementById('btnSingle').classList.toggle('active', mode==='single');
+  document.getElementById('btnQuad').classList.toggle('active', mode==='quad');
+  updSelDisplay(); renderBoard();
+}
+
+function quickBet(v) { document.getElementById('amtInput').value=v; updBetBtn(); }
+
+function onSquareClick(name, r, c) {
+  if (G.phase!=='betting' || G.bet.placed) return;
+  if (G.bet.mode==='single') {
+    G.bet.squares = [name];
+  } else {
+    const bc=Math.min(c,6), br=Math.min(r,6);
+    G.bet.squares = [];
+    for (let dr=0;dr<=1;dr++) for (let dc=0;dc<=1;dc++)
+      G.bet.squares.push(String.fromCharCode(97+bc+dc)+(8-br-dr));
+  }
+  updSelDisplay(); updBetBtn(); renderBoard();
+}
+
+function updSelDisplay() {
+  const el = document.getElementById('selSq');
+  if (!G.bet.squares.length) { el.innerHTML='Кликните на доске чтобы выбрать поле'; return; }
+  const mult = G.bet.mode==='single'?'×64':'×16';
+  el.innerHTML = `Выбрано: <b>${G.bet.squares.join(', ')}</b> (${mult})`;
+}
+
+function updBetBtn() {
+  const amt = parseFloat(document.getElementById('amtInput').value);
+  document.getElementById('betBtn').disabled = !G.bet.squares.length || isNaN(amt) || amt<=0 || amt>G.balance || G.bet.placed;
+}
+
+function placeBet() {
+  const amt = parseFloat(document.getElementById('amtInput').value);
+  if (!G.bet.squares.length || isNaN(amt) || amt<=0 || amt>G.balance) return;
+  G.bet.amount = amt; G.bet.placed = true;
+  const mult = G.bet.mode==='single'?64:16;
+  document.getElementById('selSq').innerHTML = `✓ Ставка принята: <b>${G.bet.squares.join(', ')}</b> ×${mult}`;
+  document.getElementById('betBtn').disabled = true;
+}
+
+function clearBet() {
+  G.bet.squares=[]; G.bet.placed=false;
+  updSelDisplay(); updBetBtn(); renderBoard();
+}
+
+// ── Timers ──
+function fmtTime(ms) {
+  const s=Math.max(0,Math.ceil(ms/1000));
+  return Math.floor(s/60)+':'+(s%60+'').padStart(2,'0');
+}
+
+function updTimers() {
+  const wEl=document.getElementById('timerW'), bEl=document.getElementById('timerB');
+  wEl.textContent=fmtTime(G.wTime); bEl.textContent=fmtTime(G.bTime);
+  wEl.classList.remove('active','danger'); bEl.classList.remove('active','danger');
+  if (G.phase==='playing') {
+    const isW = G.chess.turn()==='w';
+    const el = isW?wEl:bEl, t=isW?G.wTime:G.bTime;
+    el.classList.add(t<5000?'danger':'active');
+  }
+}
+
+function clearTimers() {
+  clearInterval(G.T.cd); clearInterval(G.T.game);
+  clearTimeout(G.T.move); clearInterval(G.T.pop);
+}
+
+// ── Game flow ──
+function startBetting() {
+  clearTimers();
+  G.phase='betting'; G.cdSecs=10;
+  G.chess=new Chess(); G.wTime=30000; G.bTime=30000; G.lastMove=null;
+  G.bet.squares=[]; G.bet.placed=false;
+
+  document.getElementById('phaseBadge').className='phase-badge ph-bet';
+  document.getElementById('phaseBadge').textContent='СТАВКИ ПРИНИМАЮТСЯ';
+  document.getElementById('cdNum').textContent='10';
+  document.getElementById('cdLabel').textContent='секунд до начала';
+  document.getElementById('betControls').classList.remove('hidden');
+  document.getElementById('betInfoBox').classList.add('hidden');
+  document.getElementById('noBetBox').classList.add('hidden');
+  updSelDisplay(); updBetBtn(); updTimers(); renderBoard();
+
+  G.T.cd = setInterval(()=>{
+    G.cdSecs--;
+    document.getElementById('cdNum').textContent = G.cdSecs;
+    if (G.cdSecs<=0) { clearInterval(G.T.cd); startGame(); }
+  }, 1000);
+}
+
+function startGame() {
+  G.phase='playing'; G.lastTick=Date.now();
+  document.getElementById('phaseBadge').className='phase-badge ph-play';
+  document.getElementById('phaseBadge').textContent='ПАРТИЯ ИДЁТ';
+  document.getElementById('cdNum').textContent='';
+  document.getElementById('cdLabel').textContent='';
+  document.getElementById('betControls').classList.add('hidden');
+
+  if (G.bet.placed) {
+    const mult = G.bet.mode==='single'?64:16;
+    document.getElementById('betInfoBox').classList.remove('hidden');
+    document.getElementById('biAmt').textContent='$'+G.bet.amount.toFixed(2);
+    document.getElementById('biMode').textContent=G.bet.mode==='single'?'1 поле (×64)':'4 поля (×16)';
+    document.getElementById('biSq').textContent=G.bet.squares.join(', ');
+    document.getElementById('biWin').textContent='$'+(G.bet.amount*mult).toFixed(2);
+  } else {
+    document.getElementById('noBetBox').classList.remove('hidden');
+  }
+
+  G.T.game = setInterval(()=>{
+    if (G.phase!=='playing') return;
+    const now=Date.now(), el=now-G.lastTick; G.lastTick=now;
+    if (G.chess.turn()==='w') G.wTime=Math.max(0,G.wTime-el);
+    else G.bTime=Math.max(0,G.bTime-el);
+    updTimers();
+    if (G.wTime<=0||G.bTime<=0) { clearTimers(); doTimeout(); }
+  }, 80);
+
+  scheduleMove(500);
+}
+
+function scheduleMove(delay) {
+  G.T.move = setTimeout(()=>{
+    if (G.phase!=='playing') return;
+    if (G.chess.game_over()) { endGame(); return; }
+    const mv = bestMove(G.chess);
+    if (!mv) { endGame(); return; }
+    const res = G.chess.move(mv);
+    if (res) G.lastMove={from:res.from,to:res.to};
+    renderBoard(); updTimers();
+    if (G.chess.game_over()) setTimeout(endGame, 350);
+    else scheduleMove(380);
+  }, delay);
+}
+
+function kingSquare(chess, color) {
+  let sq=null;
+  chess.board().forEach((row,r)=>row.forEach((p,c)=>{
+    if (p&&p.type==='k'&&p.color===color) sq=String.fromCharCode(97+c)+(8-r);
+  }));
+  return sq;
+}
+
+function doTimeout() {
+  G.phase='result';
+  const lost = G.wTime<=0?'w':'b';
+  G.wTime=Math.max(0,G.wTime); G.bTime=Math.max(0,G.bTime); updTimers();
+  showPopup({
+    icon:'⏱️', titleText:'ВРЕМЯ ВЫШЛО', cls:'lose',
+    sub:(lost==='w'?'Белые':'Чёрные')+' проиграли по времени',
+    detail:'При истечении времени ставки не играют',
+    won:false
+  });
+}
+
+function endGame() {
+  clearTimers(); G.phase='result';
+  if (G.chess.in_checkmate()) {
+    const mated=G.chess.turn(), ksq=kingSquare(G.chess,mated);
+    const mName=mated==='w'?'Белым':'Чёрным';
+    const wName=mated==='w'?'Чёрные':'Белые';
+    // highlight mated king
+    const kEl=document.querySelector(`[data-sq="${ksq}"]`);
+    if (kEl) kEl.style.cssText+='background:rgba(255,40,40,.7)!important';
+
+    let won=false, payout=0;
+    if (G.bet.placed && G.bet.squares.includes(ksq)) {
+      won=true; payout=G.bet.amount*(G.bet.mode==='single'?64:16);
+    }
+    showPopup({
+      icon: won?'🏆':(G.bet.placed?'💸':'♟️'),
+      titleText: won?'ПОБЕДА!':(G.bet.placed?'ПРОИГРЫШ':'МАТ!'),
+      cls: won?'win':(G.bet.placed?'lose':'draw'),
+      sub: `${wName} поставили мат ${mName}! Король на ${ksq.toUpperCase()}`,
+      detail: won
+        ? `Ваша ставка на ${G.bet.squares.join(', ')} сыграла!`
+        : (G.bet.placed ? `Король на ${ksq.toUpperCase()} — не ваше поле` : 'Партия завершена'),
+      won, payout
+    });
+  } else {
+    let reason='Ничья';
+    if (G.chess.in_stalemate()) reason='Пат — ничья';
+    else if (G.chess.in_threefold_repetition()) reason='Троекратное повторение — ничья';
+    else if (G.chess.insufficient_material()) reason='Мало материала — ничья';
+    showPopup({icon:'🤝',titleText:'НИЧЬЯ',cls:'draw',sub:reason,detail:'При ничьей ставки не играют',won:false});
+  }
+}
+
+function showPopup({icon,titleText,cls,sub,detail,won,payout=0}) {
+  // update balance
+  if (won) G.balance+=payout;
+  else if (G.bet.placed) G.balance-=G.bet.amount;
+  G.balance=Math.max(0,G.balance);
+  updBal();
+
+  document.getElementById('popIcon').textContent=icon;
+  document.getElementById('popTitle').textContent=titleText;
+  document.getElementById('popTitle').className='pop-title '+cls;
+  document.getElementById('popSub').textContent=sub;
+  document.getElementById('popDetail').textContent=detail;
+  if (G.bet.placed) {
+    if (won) {
+      document.getElementById('popAmt').textContent='+$'+payout.toFixed(2);
+      document.getElementById('popAmt').className='pop-amount pos';
+    } else {
+      document.getElementById('popAmt').textContent='-$'+G.bet.amount.toFixed(2);
+      document.getElementById('popAmt').className='pop-amount neg';
+    }
+  } else {
+    document.getElementById('popAmt').textContent='Ставки не было';
+    document.getElementById('popAmt').className='pop-amount';
+  }
+
+  document.getElementById('overlay').classList.add('show');
+  let cd=3; document.getElementById('popCd').textContent=cd;
+  G.T.pop=setInterval(()=>{
+    cd--; document.getElementById('popCd').textContent=cd;
+    if (cd<=0) {
+      clearInterval(G.T.pop);
+      document.getElementById('overlay').classList.remove('show');
+      startBetting();
+    }
+  },1000);
+}
+
+function updBal() {
+  document.getElementById('balDisplay').textContent=
+    '$'+G.balance.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,' ');
+}
+
+// ── Init ──
+document.getElementById('amtInput').addEventListener('input', updBetBtn);
+buildBoard();
+startBetting();
+</script>
+</body>
+</html>
