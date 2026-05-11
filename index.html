@@ -93,23 +93,37 @@ main{flex:1;display:flex;justify-content:center;align-items:flex-start;gap:22px;
 .bi-row{display:flex;justify-content:space-between}
 .bi-val{color:var(--accent2);font-weight:700}
 
-/* POPUP */
-.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:100;align-items:center;justify-content:center;backdrop-filter:blur(6px)}
-.overlay.show{display:flex}
-.popup{background:var(--bg2);border:1px solid var(--bg4);border-radius:16px;padding:32px 28px;max-width:380px;width:90%;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,.8),0 0 0 1px rgba(128,108,239,.2);animation:popIn .3s cubic-bezier(.34,1.56,.64,1)}
-@keyframes popIn{from{transform:scale(.75);opacity:0}to{transform:scale(1);opacity:1}}
-.pop-icon{font-size:3em;margin-bottom:12px}
-.pop-title{font-size:1.5em;font-weight:900;margin-bottom:6px}
-.pop-title.win{color:var(--green)}
-.pop-title.lose{color:var(--red)}
-.pop-title.draw{color:var(--text)}
-.pop-sub{color:var(--text);font-size:.875em;margin-bottom:14px;line-height:1.5}
-.pop-amount{font-size:1.8em;font-weight:700;margin-bottom:6px}
-.pop-amount.pos{color:var(--green)}
-.pop-amount.neg{color:var(--red)}
-.pop-detail{font-size:.8em;color:var(--text);margin-bottom:18px}
-.pop-cd{font-size:.8em;color:var(--text)}
-.pop-cd b{color:var(--accent2)}
+/* RESULT CARD */
+.result-card{width:100%;background:var(--bg2);border:1px solid var(--bg4);border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:14px;animation:slideDown .35s ease}
+@keyframes slideDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+.rc-icon{font-size:2em;flex-shrink:0}
+.rc-body{flex:1;min-width:0}
+.rc-title{font-size:1.05em;font-weight:900;line-height:1.2}
+.rc-title.win{color:var(--green)}
+.rc-title.lose{color:var(--red)}
+.rc-title.draw{color:var(--text)}
+.rc-sub{font-size:.8em;color:var(--text);margin-top:3px;line-height:1.4}
+.rc-amount{font-size:1.3em;font-weight:700;margin-top:4px}
+.rc-amount.pos{color:var(--green)}
+.rc-amount.neg{color:var(--red)}
+.rc-detail{font-size:.75em;color:var(--text2);margin-top:2px}
+.rc-cd{font-size:.78em;color:var(--text);white-space:nowrap;flex-shrink:0;text-align:right}
+.rc-cd b{color:var(--accent2);font-size:1.3em;display:block}
+
+/* RULES */
+.rules-section{background:var(--bg2);border-top:1px solid var(--bg4);padding:40px 32px 48px;margin-top:8px}
+.rules-inner{max-width:900px;margin:0 auto}
+.rules-heading{font-size:1.1em;font-weight:700;color:var(--textbright);margin-bottom:6px;letter-spacing:.5px}
+.rules-sub{font-size:.82em;color:var(--text);margin-bottom:28px;line-height:1.5}
+.rules-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:28px}
+.rule-card{background:var(--bg3);border:1px solid var(--bg4);border-radius:12px;padding:16px}
+.rule-card-icon{font-size:1.5em;margin-bottom:8px}
+.rule-card-title{font-size:.82em;font-weight:700;color:var(--textbright);margin-bottom:5px;letter-spacing:.3px}
+.rule-card-text{font-size:.78em;color:var(--text);line-height:1.55}
+.rule-card-text b{color:var(--accent2)}
+.rules-payouts{display:flex;gap:10px;flex-wrap:wrap}
+.payout-pill{background:var(--bg3);border:1px solid var(--bg4);border-radius:40px;padding:8px 16px;font-size:.78em;color:var(--text);line-height:1.4}
+.payout-pill b{color:var(--accent2)}
 
 .hidden{display:none!important}
 </style>
@@ -140,6 +154,17 @@ main{flex:1;display:flex;justify-content:center;align-items:flex-start;gap:22px;
     <div class="player-bar">
       <span class="pname">⬜ White</span>
       <span class="ptimer" id="timerW">0:30</span>
+    </div>
+
+    <div class="result-card hidden" id="resultCard">
+      <div class="rc-icon" id="rcIcon">🏆</div>
+      <div class="rc-body">
+        <div class="rc-title win" id="rcTitle">YOU WIN!</div>
+        <div class="rc-sub" id="rcSub">Black checkmated White!</div>
+        <div class="rc-amount pos" id="rcAmt">+$640</div>
+        <div class="rc-detail" id="rcDetail">Your bet on e1 paid off!</div>
+      </div>
+      <div class="rc-cd">Next game in<b id="rcCd">3</b>sec</div>
     </div>
   </div>
 
@@ -189,16 +214,39 @@ main{flex:1;display:flex;justify-content:center;align-items:flex-start;gap:22px;
   </div>
 </main>
 
-<div class="overlay" id="overlay">
-  <div class="popup">
-    <div class="pop-icon" id="popIcon">🏆</div>
-    <div class="pop-title win" id="popTitle">YOU WIN!</div>
-    <div class="pop-sub" id="popSub">Your bet paid off!</div>
-    <div class="pop-amount pos" id="popAmt">+$640</div>
-    <div class="pop-detail" id="popDetail">King on e1</div>
-    <div class="pop-cd">New game in <b id="popCd">3</b> sec…</div>
+<section class="rules-section">
+  <div class="rules-inner">
+    <div class="rules-heading">How to Play</div>
+    <div class="rules-sub">Before each game starts you have 10 seconds to bet on which square the losing king will be standing on when the game ends — by checkmate or by running out of time.</div>
+    <div class="rules-grid">
+      <div class="rule-card">
+        <div class="rule-card-icon">⏱️</div>
+        <div class="rule-card-title">BETTING PHASE</div>
+        <div class="rule-card-text">You have <b>10 seconds</b> before each game to place a bet. Choose a bet mode, select squares on the board, enter an amount, and click <b>Place Bet</b>. Your bet is deducted from your balance immediately.</div>
+      </div>
+      <div class="rule-card">
+        <div class="rule-card-icon">♟️</div>
+        <div class="rule-card-title">THE GAME</div>
+        <div class="rule-card-text">Two AI engines play bullet chess against each other — <b>30 seconds per side</b>. You watch. The game ends by checkmate or when a side runs out of time.</div>
+      </div>
+      <div class="rule-card">
+        <div class="rule-card-icon">🎯</div>
+        <div class="rule-card-title">WINNING</div>
+        <div class="rule-card-text">Your bet wins if the <b>losing king</b> is standing on one of your selected squares at the end of the game — regardless of whether the game ended by checkmate or timeout.</div>
+      </div>
+      <div class="rule-card">
+        <div class="rule-card-icon">🤝</div>
+        <div class="rule-card-title">DRAWS</div>
+        <div class="rule-card-text">If the game ends in a <b>draw or stalemate</b>, there is no losing king — all bets are lost for that round.</div>
+      </div>
+    </div>
+    <div class="rules-payouts">
+      <div class="payout-pill">🎯 <b>1 square</b> — if the losing king is on your square you win <b>×64</b> your bet</div>
+      <div class="payout-pill">⊞ <b>2×2 block (4 squares)</b> — if the losing king is in your block you win <b>×16</b> your bet</div>
+      <div class="payout-pill">💸 Miss or draw — you lose your bet</div>
+    </div>
   </div>
-</div>
+</section>
 
 <script>
 // ── Piece-square tables (white perspective, row 0 = rank 8) ──
@@ -414,6 +462,7 @@ function startBetting() {
   document.getElementById('betControls').classList.remove('hidden');
   document.getElementById('betInfoBox').classList.add('hidden');
   document.getElementById('noBetBox').classList.add('hidden');
+  document.getElementById('resultCard').classList.add('hidden');
   updSelDisplay(); updBetBtn(); updTimers(); renderBoard();
 
   G.T.cd = setInterval(()=>{
@@ -538,31 +587,34 @@ function showPopup({icon,titleText,cls,sub,detail,won,payout=0}) {
   if (won) G.balance+=payout;
   updBal();
 
-  document.getElementById('popIcon').textContent=icon;
-  document.getElementById('popTitle').textContent=titleText;
-  document.getElementById('popTitle').className='pop-title '+cls;
-  document.getElementById('popSub').textContent=sub;
-  document.getElementById('popDetail').textContent=detail;
+  document.getElementById('rcIcon').textContent=icon;
+  document.getElementById('rcTitle').textContent=titleText;
+  document.getElementById('rcTitle').className='rc-title '+cls;
+  document.getElementById('rcSub').textContent=sub;
+  document.getElementById('rcDetail').textContent=detail;
+
   if (G.bet.placed) {
     if (won) {
-      document.getElementById('popAmt').textContent='+$'+payout.toFixed(2);
-      document.getElementById('popAmt').className='pop-amount pos';
+      document.getElementById('rcAmt').textContent='+$'+payout.toFixed(2);
+      document.getElementById('rcAmt').className='rc-amount pos';
     } else {
-      document.getElementById('popAmt').textContent='-$'+G.bet.amount.toFixed(2);
-      document.getElementById('popAmt').className='pop-amount neg';
+      document.getElementById('rcAmt').textContent='-$'+G.bet.amount.toFixed(2);
+      document.getElementById('rcAmt').className='rc-amount neg';
     }
   } else {
-    document.getElementById('popAmt').textContent='No bet placed';
-    document.getElementById('popAmt').className='pop-amount';
+    document.getElementById('rcAmt').textContent='No bet placed';
+    document.getElementById('rcAmt').className='rc-amount';
   }
 
-  document.getElementById('overlay').classList.add('show');
-  let cd=3; document.getElementById('popCd').textContent=cd;
+  const card = document.getElementById('resultCard');
+  card.classList.remove('hidden');
+
+  let cd=3; document.getElementById('rcCd').textContent=cd;
   G.T.pop=setInterval(()=>{
-    cd--; document.getElementById('popCd').textContent=cd;
+    cd--; document.getElementById('rcCd').textContent=cd;
     if (cd<=0) {
       clearInterval(G.T.pop);
-      document.getElementById('overlay').classList.remove('show');
+      card.classList.add('hidden');
       startBetting();
     }
   },1000);
